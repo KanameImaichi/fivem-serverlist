@@ -1,22 +1,24 @@
+import Card from "@/features/home/components/Card";
+import Hero from "@/features/home/components/Hero.tsc";
+import React from "react";
+
 export const metadata = {
-  title: "Home - Simple",
-  description: "Page description",
+	title: "Home - Simple",
+	description: "Page description",
 };
 
-import Hero from "@/components/hero-home";
-import BusinessCategories from "@/components/business-categories";
-import FeaturesPlanet from "@/components/features-planet";
-import LargeTestimonial from "@/components/large-testimonial";
-import Cta from "@/components/cta";
 
 export default function Home() {
-  return (
-    <>
-      <Hero />
-      <BusinessCategories />
-      <FeaturesPlanet />
-      <LargeTestimonial />
-      <Cta />
-    </>
-  );
+	const server_ids = ["rvzy77", "95aabe"];
+
+	return (
+		<>
+			<Hero />
+			<div className="max-w-7xl mx-auto flex">
+				{server_ids.map((id,index) => (
+					<Card key={id} server_id={id} order={index} />
+				))}
+			</div>
+		</>
+	);
 }
