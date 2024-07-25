@@ -1,0 +1,53 @@
+name: Deploy Fivem Server List
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  GITHUB_SHA: ${{ github.sha }}
+  REGISTRY_HOSTNAME: asia-northeast1-docker.pkg.dev
+  GCP_PROJECT_ID: scientific-base-418013
+  GCP_PROJECT_NUMBER: 879914464587
+  APPLICATION_NAME: server-list
+jobs:
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: image-url
+        name: Create Docker image url
+        run: |
+          echo "value=${{ env.REGISTRY_HOSTNAME }}/${{ env.GCP_PROJECT_ID }}/${{ env.APPLICATION_NAME }}/app:latest" >> $GITHUB_OUTPUT
+
+      - name: loud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - id: auth
+        name: "Authenticate to Google Cloud"
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/${{ env.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-action-deploy-pool/providers/github-actions-provider"
+          service_account: "github-actions-deployer@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com"
+          access_token_lifetime: 1200s
+
+      - name: add artifact registry host
+        run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
+
+      - name: Build a docker image
+        run: |
+          docker build -f ./Dockerfile -t ${{ steps.image-url.outputs.value }} .
+
+      - name: Push the docker image to Artifact Registry
+        run: docker push ${{ steps.image-url.outputs.value }}
