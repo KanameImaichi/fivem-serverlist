@@ -2,7 +2,11 @@ import error from "@/public/images/error-sign.svg";
 import Image from "next/image";
 import React from "react";
 
-const Modal = ({ onClose, open }: { onClose: () => void; open: boolean }) => {
+const Modal = ({
+	onClose,
+	open,
+	message,
+}: { onClose: () => void; open: boolean; message: string }) => {
 	return open ? (
 		<>
 			<div className="bg-white  top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-5 flex flex-col items-center absolute z-20 px-12">
@@ -13,7 +17,7 @@ const Modal = ({ onClose, open }: { onClose: () => void; open: boolean }) => {
 				<p className="text-xl text-gray-500 mb-5">
 					リクエストが正常に完了しませんでした。
 					<br />
-					サーバーのIDがあっているか確認してください。
+					{message}
 				</p>
 				<div className="flex mt-auto w-full">
 					<button

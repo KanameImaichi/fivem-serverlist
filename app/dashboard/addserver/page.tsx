@@ -88,7 +88,11 @@ export default function AddServer() {
 			)}
 			{state.state === "failed" && (
 				<>
-					<Modal open={isOpen} onClose={() => setIsOpen(false)} />
+					<Modal
+						open={isOpen}
+						onClose={() => setIsOpen(false)}
+						message={state.messages}
+					/>
 				</>
 			)}
 		</>

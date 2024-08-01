@@ -1,5 +1,7 @@
 "use client";
+import type { Prisma } from "@prisma/client";
 import React, { useState } from "react";
+import { useForm } from "react-hook-form";
 
 const ServerEditModal = ({
 	onClose,
@@ -25,6 +27,12 @@ const ServerEditModal = ({
 	const [serverDescription, setServerDescription] = useState(description);
 	const [serverSubtitle, setServerSubtitle] = useState(subtitle);
 	const rows = 8;
+	const {
+		handleSubmit,
+		register,
+		formState: { errors, isValid, isSubmitting },
+	} = useForm<Prisma.ServerCreateInput>({ mode: "onChange" });
+	console.log(errors);
 	const uploadImage = async () => {
 		const formData = new FormData();
 		// @ts-ignore
@@ -85,7 +93,11 @@ const ServerEditModal = ({
 								className="block w-full p-3 text-gray-900 border border-gray-300 bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500"
 								defaultValue={serverName}
 								onChange={(e) => setServerName(e.target.value)}
+								{...register("name", { required: true })}
 							/>
+							{errors.name && (
+								<span className="text-red-500">入力必須です</span>
+							)}
 						</div>
 						<div className="mt-4">
 							<label
@@ -101,6 +113,7 @@ const ServerEditModal = ({
 								className="block w-full p-3 text-gray-900 border border-gray-300 bg-gray-50 text-xs focus:ring-blue-500 focus:border-blue-500"
 								defaultValue={serverSubtitle}
 								onChange={(e) => setServerSubtitle(e.target.value)}
+								{...register("subtitle", { required: true })}
 							/>
 						</div>
 						<div className="mt-4">
@@ -117,6 +130,7 @@ const ServerEditModal = ({
 								className="resize-none block w-full p-3 text-gray-900 border border-gray-300 bg-gray-50 text-md focus:ring-blue-500 focus:border-blue-500"
 								defaultValue={serverDescription}
 								onChange={(e) => setServerDescription(e.target.value)}
+								{...register("description", { required: true })}
 							/>
 						</div>
 						<div className="mt-4">
@@ -124,7 +138,28 @@ const ServerEditModal = ({
 								htmlFor="server-image"
 								className="block mb-2 text-lg font-bold text-blue-600"
 							>
-								サーバーの画像
+								サーバーのサムネイル
+							</label>
+							<input
+								className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+								id="server-image"
+								onChange={(e) => {
+									generateUrl();
+									// @ts-ignore
+									setFile(e.target.files[0]);
+								}}
+								type="file"
+							/>
+							<span className="text-gray-400 text-sm">
+								画像を指定しなくても、以前アップロードした画像が使用されます。
+							</span>
+						</div>
+						<div className="mt-4">
+							<label
+								htmlFor="server-image"
+								className="block mb-2 text-lg font-bold text-blue-600"
+							>
+								サーバーのアイコン
 							</label>
 							<input
 								className="block w-full mb-5 text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
@@ -137,16 +172,28 @@ const ServerEditModal = ({
 								type="file"
 							/>
 						</div>
-
-						<button
-							type="button"
-							className={
-								"mt-12 bg-blue-700 text-white font-bold rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 w-full"
-							}
-							onClick={() => submitServerProfile()}
-						>
-							保存する
-						</button>
+						{isValid ? (
+							<button
+								type="button"
+								className={
+									"mt-12 bg-blue-700 text-white font-bold rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 w-full"
+								}
+								onClick={() => submitServerProfile()}
+							>
+								保存する
+							</button>
+						) : (
+							<button
+								type="button"
+								disabled
+								className={
+									"mt-12 bg-blue-700 text-white font-bold rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 w-full"
+								}
+								onClick={() => submitServerProfile()}
+							>
+								保存する
+							</button>
+						)}
 					</form>
 				</div>
 			</div>

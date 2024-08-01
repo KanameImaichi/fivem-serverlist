@@ -1,43 +1,41 @@
 import { prisma } from "@/app/auth";
 import DiscordButton from "@/components/elements/discordButton";
 import Header from "@/components/layouts/header";
-import img from "@/public/images/img.png";
-import Image from "next/image";
+import { redirect } from "next/navigation";
 import React from "react";
-import { fetchStreamData } from "../../../utils/readerStream";
-import removeCaretAndNumber from "../../../utils/removeCaretAndNumber";
 
 export default async function ServerList({
 	params,
 }: { params: { id: string } }) {
 	const { id } = params;
-	const res = await fetchStreamData(
+	const res = await fetch(
 		`https://servers-frontend.fivem.net/api/servers/single/${id}`,
 	);
-	console.log(res.Data.players[0]);
-	// todo dbから
+	const jsonRes = await res.json();
 	const server = await prisma.server.findUnique({
 		where: {
 			id: id,
 		},
 	});
-	const clients = res.Data.clients;
-	const maxClients = res.Data.sv_maxclients;
-	const serverName = removeCaretAndNumber(res.Data.vars.sv_projectName);
-	const description = res.Data.vars.sv_projectDesc;
-	const discordUrl = res.Data.vars.Discord;
-	const connectEndPoints = res.Data.connectEndPoints;
-	const score = res.Data.upvotePower;
-	const tags = res.Data.vars.tags.split(",");
+	if (!server || !jsonRes.Data) redirect("/404");
+	const clients = jsonRes.Data.clients;
+	const maxClients = jsonRes.Data.sv_maxclients;
+	const discordUrl = jsonRes.Data.vars.Discord;
+	const connectEndPoints = jsonRes.Data.connectEndPoints;
+	const score = jsonRes.Data.upvotePower;
+	const tags = jsonRes.Data.vars.tags.split(",");
+
 	const copyToClipboard = async (text: string) => {
 		await global.navigator.clipboard.writeText(text);
 	};
+	const resizedServerPageUrl = server.image_url.replace("public", "ServerPage");
+
 	return (
 		<>
 			<Header />
 			<div className="flex max-w-6xl mx-auto gap-5 mt-20">
 				<div>
-					<Image src={img} alt="Card" />
+					<img src={resizedServerPageUrl} alt="server thmbnail" />
 					<p className="text-4xl text-blue-500 font-bold mt-8 mb-4">
 						{server?.name}
 					</p>

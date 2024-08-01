@@ -1,36 +1,6 @@
 import { auth, prisma } from "@/app/auth";
 import { NextResponse } from "next/server";
 
-// export async function POST(request: Request) {
-// 	const session = await auth();
-// 	const discordId = session?.user?.id;
-// 	console.log(discordId);
-// 	// todo 入力のValidation
-// 	const user = await prisma.user.findUnique({
-// 		where: { discordId: discordId },
-// 	});
-// 	if (!user) {
-// 		return NextResponse.json(
-// 			{ message: "ユーザーが見つかりませんでした。" },
-// 			{ status: 404 },
-// 		);
-// 	}
-// 	const req = await request.json();
-// 	const server = await prisma.server.create({
-// 		data: {
-// 			id: req.id,
-// 			name: req.name,
-// 			ownerDiscordId: session?.user.id,
-// 			description: req.description,
-// 			image_url: req.image_url,
-// 		},
-// 	});
-// 	return NextResponse.json(
-// 		{ message: "ユーザーが見つかりませんでした。" },
-// 		{ status: 404 },
-// 	);
-// }
-
 export async function PUT(request: Request) {
 	const session = await auth();
 	const discordId = session?.user?.id;
