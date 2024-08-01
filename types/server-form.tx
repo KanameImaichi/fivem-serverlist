@@ -1,0 +1,6 @@
+type ServerForm = {
+ name: string
+ nickname: string
+ password: string
+ passwordConfirmation: string
+}
