@@ -1,48 +1,75 @@
-# ==================================================
-# パッケージのインストールのレイヤー
-# ==================================================
-FROM node:18-alpine AS deps
-WORKDIR /base
+# https://github.com/99lalo/nextjs-prisma-docker/blob/main/Dockerfile
 
-COPY package.json package-lock.json ./
-RUN  npm install --production
+FROM node:20.10-alpine AS base
 
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
 
-# ==================================================
-# アプリのビルドレイヤー
-# ==================================================
-FROM node:18-alpine AS builder
-WORKDIR /build
-COPY --from=deps /base/node_modules ./node_modules
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci
 
-COPY ./app /app
-COPY ./components /components
-COPY ./contexts /contexts
-COPY ./css /css
-COPY ./public /public
-COPY ./utils /utils
+FROM base AS dev
 
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-COPY package.json ./
+# Uncomment this if you're using prisma, generates prisma files for linting
+RUN npx prisma generate
 
-# buildは、tsからjsに変換するのでこれがないとエラーになる
-COPY tsconfig.json .
-COPY /prisma ./prisma
-# nextのbuildの設定ルール
-COPY next.config.js .
+#Enables Hot Reloading Check https://github.com/vercel/next.js/issues/36774 for more information
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /root/.npm /root/.npm
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Uncomment this if you're using prisma, generates prisma files for linting
+# RUN npx prisma generate
 
 RUN npm run build
 
-
-# ==================================================
-# アプリの実行レイヤー
-# ==================================================
-FROM node:18-alpine AS runner
-#
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
-COPY --from=builder /build/.next ./.next
-COPY --from=builder /build/node_modules ./node_modules
-COPY --from=builder /build/package.json ./package.json
+ENV NEXT_TELEMETRY_DISABLED 1
 
-CMD ["npm", "start"]
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Uncomment this if you're using prisma, copies prisma files for linting
+ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma/
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+# set hostname to localhost
+ENV HOSTNAME "0.0.0.0"
+
+# server.js is created by next build from the standalone output
+# https://nextjs.org/docs/pages/api-reference/next-config-js/output
+CMD ["npm", "run", "start:migrate:prod"]
