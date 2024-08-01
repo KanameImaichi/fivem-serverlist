@@ -16,6 +16,14 @@ WORKDIR /build
 COPY --from=deps /base/node_modules ./node_modules
 
 COPY ./app /build/app
+COPY ./components /build/components
+COPY ./contexts /build/contexts
+COPY ./css /build/css
+COPY ./public /build/public
+COPY ./type /build/type
+COPY ./utils /build/utils
+
+
 COPY package.json ./
 
 # buildは、tsからjsに変換するのでこれがないとエラーになる
