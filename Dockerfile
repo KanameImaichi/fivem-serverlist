@@ -20,7 +20,6 @@ COPY ./components /build/components
 COPY ./contexts /build/contexts
 COPY ./css /build/css
 COPY ./public /build/public
-COPY ./type /build/type
 COPY ./utils /build/utils
 
 
