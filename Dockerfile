@@ -1,6 +1,4 @@
-# https://github.com/99lalo/nextjs-prisma-docker/blob/main/Dockerfile
-
-FROM node:20.10-alpine AS base
+FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -9,40 +7,37 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-FROM base AS dev
-
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Uncomment this if you're using prisma, generates prisma files for linting
-RUN npx prisma generate
-
-#Enables Hot Reloading Check https://github.com/vercel/next.js/issues/36774 for more information
-ENV CHOKIDAR_USEPOLLING=true
-ENV WATCHPACK_POLLING=true
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /root/.npm /root/.npm
 COPY . .
 
+# Next.js collects completely anonymous telemetry data about general usage.
+# Learn more here: https://nextjs.org/telemetry
+# Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Uncomment this if you're using prisma, generates prisma files for linting
-# RUN npx prisma generate
-
+# RUN yarn build
+RUN npx prisma generate
+# If using npm comment out above and use below instead
 RUN npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
 
+ENV NODE_ENV production
+# Uncomment the following line in case you want to disable telemetry during runtime.
 ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN addgroup --system --gid 1001 nodejs
@@ -58,10 +53,7 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Uncomment this if you're using prisma, copies prisma files for linting
- COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma/
-
+COPY --chown=nextjs:nodejs prisma ./prisma/
 USER nextjs
 
 EXPOSE 3000
@@ -70,6 +62,4 @@ ENV PORT 3000
 # set hostname to localhost
 ENV HOSTNAME "0.0.0.0"
 
-# server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD ["npm", "run", "start:migrate:prod"]
+CMD ["node", "server.js"]
