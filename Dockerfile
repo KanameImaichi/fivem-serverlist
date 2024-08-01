@@ -15,12 +15,12 @@ FROM node:18-alpine AS builder
 WORKDIR /build
 COPY --from=deps /base/node_modules ./node_modules
 
-COPY ./app /build/app
-COPY ./components /build/components
-COPY ./contexts /build/contexts
-COPY ./css /build/css
-COPY ./public /build/public
-COPY ./utils /build/utils
+COPY ./app /app
+COPY ./components /components
+COPY ./contexts /contexts
+COPY ./css /css
+COPY ./public /public
+COPY ./utils /utils
 
 
 COPY package.json ./
